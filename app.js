@@ -24,12 +24,16 @@ const capitalized = string => string[0].toUpperCase() + string.slice(1).toLowerC
 
 app.locals.title = `${capitalized(projectName)}- Generated with Ironlauncher`;
 
+require('./config/session.config')(app);
+
 // 👇 Start handling routes here
 const index = require('./routes/index');
 const auth = require('./routes/auth.routes');
+//const middleware = require('./middleware/route-guard');
 
 app.use('/', index);
 app.use('/', auth);
+//app.use('/', middleware);
 
 // ❗ To handle errors. Routes that don't exist or errors that you handle in specific routes
 require('./error-handling')(app);

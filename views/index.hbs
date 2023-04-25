@@ -5,3 +5,13 @@
 <br>
 <br>
 <a href="/login">Login Here!</a>
+
+{{#if isLoggedIn}}
+<nav>
+    <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/main">Main</a></li>
+        <li><a href="/private">Private</a></li>
+    </ul>
+</nav>
+{{/if}}

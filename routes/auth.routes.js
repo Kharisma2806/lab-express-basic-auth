@@ -6,33 +6,77 @@ const User = require("../models/User.model")
 
 const saltRounds = 10;
 
+const { isLoggedIn } = require('../middleware/route-guard.js')
+
 router.get("/sign-up", (req, res) => {
   res.render("auth/signup-form");
 });
 
-// POST route to handle form submission
 router.post("/sign-up", async (req, res, next) => {
-  const { username, password } = req.body;
-
   try {
-    // Check if username already exists in database
-    const existingUser = await User.findOne({ username });
+    const { username, password } = req.body;
 
-    if (existingUser) {
-      return res.render("auth/signup-form", { errorMessage: "Username already exists" });
+    if (!username || !password) {
+      res.render("auth/signup-form", {
+        errorMessage: "Please fill out all the fields.",
+      });
+      return;
     }
 
-    // Hash the password using bcrypt
-    const salt = await bcrypt.genSalt(saltRounds);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const user = await User.findOne({ username });
+    if (user) {
+      res.render("auth/signup-form", {
+        errorMessage: "The username and/or email are in use.",
+      });
+      return;
+    } 
 
-    // Create a new user in the database
+    const salt = bcrypt.genSaltSync(saltRounds);
+    const hashedPassword = bcrypt.hashSync(password, salt);
     await User.create({ username, password: hashedPassword });
-
-    res.redirect("/login");
+    res.redirect("/");
   } catch (error) {
     next(error);
   }
+});
+
+router.get('/login', (req, res) => {
+  res.render('auth/login-form');
+});
+
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    res.render('auth/login-form', { errorMessage: 'Please fill out all the fields.' });
+    return;
+  }
+
+ const user = await User.findOne({ username });
+
+  if (!user) {
+    res.render('auth/login-form', { errorMessage: 'Invalid username or password.' });
+    return;
+  }
+
+  const isValidPassword = bcrypt.compareSync(password, user.password);
+  if (!isValidPassword) {
+    res.render('auth/login-form', { errorMessage: 'Invalid username or password.' });
+    return;
+  }
+  req.session.user = user;
+  console.log('THIS IS THE SESSION: ', req.session);
+  res.redirect('/');
+});
+
+// Define the /main route
+router.get('/main', isLoggedIn, (req, res) => {
+  res.render('main', { user: req.session.currentUser }); // Render the main view with a user object to display the username
+});
+
+// Define the /private route
+router.get('/private', isLoggedIn, (req, res) => {
+  res.render('private', { user: req.session.currentUser }); // Render the private view with a user object to display the username
 });
 
 module.exports = router;
